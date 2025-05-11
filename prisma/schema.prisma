@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Producto {
+  codigo          String                 @id
+  descripcion     String
+  unidadVenta     UnidadVenta
+  categoriaId     String // Cambiado de Int a String para UUID
+  categoria       Categoria              @relation(fields: [categoriaId], references: [id])
+  subcategoriaId  String? // Cambiado de Int? a String? para UUID
+  subcategoria    Categoria?             @relation("Subcategoria", fields: [subcategoriaId], references: [id])
+  confUnidadVenta String
+  infoAdicional   String?
+  estado          EstadoRegistro
+  foto            String?
+  moneda          Moneda
+  valorVenta      Float
+  tasaImpuesto    Float
+  precioVenta     Float
+  stock           Stock?
+  movimientos     MovimientoInventario[]
+}
+
+model Categoria {
+  id            String         @id @default(uuid()) // Cambiado de Int a String con generación UUID
+  nombre        String
+  icon          String
+  identificador TipoCategoria
+  descripcion   String
+  foto          String?
+  estado        EstadoRegistro
+  productos     Producto[]
+  subcategorias Producto[]     @relation("Subcategoria")
+}
+
+model Stock {
+  productoId        String   @id
+  producto          Producto @relation(fields: [productoId], references: [codigo])
+  stockComprometido Int
+  stockFisico       Int
+}
+
+enum UnidadVenta {
+  CJA
+  PAQ
+  BOL
+  BOT
+  BAR
+  SCH
+}
+
+enum EstadoRegistro {
+  A
+  I
+}
+
+enum TipoCategoria {
+  C // Categoría
+  S // Subcategoría
+}
+
+enum Moneda {
+  PEN
+  USD
+  EUR
+}
+
+model Empresa {
+  id           String                 @id @default(uuid())
+  ruc          String
+  nombre       String
+  direccion    String
+  codigoUbigeo String
+  estado       EstadoRegistro
+  clientes     Cliente[]
+  movimientos  MovimientoInventario[]
+  createdAt    DateTime               @default(now())
+}
+
+model Cliente {
+  id              String         @id @default(uuid())
+  nombres         String
+  apellidoPaterno String
+  apellidoMaterno String
+  celular         String
+  email           String
+  estado          EstadoRegistro
+  empresaId       String
+  empresa         Empresa        @relation(fields: [empresaId], references: [id])
+  createdAt       DateTime       @default(now())
+}
+
+model MovimientoInventario {
+  id                String         @id @default(uuid())
+  codigoTransaccion String
+  fecha             DateTime
+  signoOperacion    SignoOperacion
+  codigoProducto    String
+  unidadVenta       String
+  cantidad          Int
+  estado            EstadoRegistro
+  empresaId         String
+  empresa           Empresa        @relation(fields: [empresaId], references: [id])
+  createdAt         DateTime       @default(now())
+  producto          Producto?      @relation(fields: [codigoProducto], references: [codigo])
+}
+
+enum SignoOperacion {
+  MAS // +
+  MENOS // -
+}
