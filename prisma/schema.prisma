@@ -14,13 +14,12 @@ datasource db {
 }
 
 model Producto {
-  codigo          String                 @id
+  id              String         @id @default(uuid())
+  codigo          String         @unique
   descripcion     String
   unidadVenta     UnidadVenta
-  categoriaId     String // Cambiado de Int a String para UUID
-  categoria       Categoria              @relation(fields: [categoriaId], references: [id])
-  subcategoriaId  String? // Cambiado de Int? a String? para UUID
-  subcategoria    Categoria?             @relation("Subcategoria", fields: [subcategoriaId], references: [id])
+  subcategoriaId  String // Ahora es obligatorio y único
+  subcategoria    Subcategoria   @relation(fields: [subcategoriaId], references: [id])
   confUnidadVenta String
   infoAdicional   String?
   estado          EstadoRegistro
@@ -29,27 +28,32 @@ model Producto {
   valorVenta      Float
   tasaImpuesto    Float
   precioVenta     Float
-  stock           Stock?
-  movimientos     MovimientoInventario[]
+  createdAt       DateTime       @default(now())
+  stockRegistro   Stock?
 }
 
 model Categoria {
-  id            String         @id @default(uuid()) // Cambiado de Int a String con generación UUID
+  id            String         @id @default(uuid())
   nombre        String
   icon          String
-  identificador TipoCategoria
   descripcion   String
   foto          String?
   estado        EstadoRegistro
-  productos     Producto[]
-  subcategorias Producto[]     @relation("Subcategoria")
+  subcategorias Subcategoria[]
+  createdAt     DateTime       @default(now())
 }
 
-model Stock {
-  productoId        String   @id
-  producto          Producto @relation(fields: [productoId], references: [codigo])
-  stockComprometido Int
-  stockFisico       Int
+model Subcategoria {
+  id          String         @id @default(uuid())
+  nombre      String
+  icon        String
+  descripcion String
+  foto        String?
+  estado      EstadoRegistro
+  categoriaId String
+  categoria   Categoria      @relation(fields: [categoriaId], references: [id])
+  productos   Producto[]
+  createdAt   DateTime       @default(now())
 }
 
 enum UnidadVenta {
@@ -57,7 +61,7 @@ enum UnidadVenta {
   PAQ
   BOL
   BOT
-  BAR
+  BARn
   SCH
 }
 
@@ -78,15 +82,14 @@ enum Moneda {
 }
 
 model Empresa {
-  id           String                 @id @default(uuid())
+  id           String         @id @default(uuid())
   ruc          String
   nombre       String
   direccion    String
   codigoUbigeo String
   estado       EstadoRegistro
   clientes     Cliente[]
-  movimientos  MovimientoInventario[]
-  createdAt    DateTime               @default(now())
+  createdAt    DateTime       @default(now())
 }
 
 model Cliente {
@@ -102,19 +105,14 @@ model Cliente {
   createdAt       DateTime       @default(now())
 }
 
-model MovimientoInventario {
-  id                String         @id @default(uuid())
-  codigoTransaccion String
-  fecha             DateTime
-  signoOperacion    SignoOperacion
-  codigoProducto    String
-  unidadVenta       String
-  cantidad          Int
-  estado            EstadoRegistro
-  empresaId         String
-  empresa           Empresa        @relation(fields: [empresaId], references: [id])
-  createdAt         DateTime       @default(now())
-  producto          Producto?      @relation(fields: [codigoProducto], references: [codigo])
+model Stock {
+  id                String   @id @default(uuid())
+  productoId        String   @unique
+  producto          Producto @relation(fields: [productoId], references: [id])
+  stockComprometido Int      @default(0)
+  stockFisico       Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 enum SignoOperacion {

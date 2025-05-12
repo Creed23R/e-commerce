@@ -41,11 +41,10 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                 setCurrentImageIndex(0);
             }
             
-            if (onImageChange) {
-                onImageChange(processedImages.map(img => ({ file: img.file, isMain: img.isMain })));
-            }
+            // No llamar a onImageChange aquí para evitar el bucle infinito
+            // El componente padre ya tiene estos datos
         }
-    }, [initialImages,onImageChange]);
+    }, [initialImages]); // Quitar onImageChange de las dependencias
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -126,7 +125,7 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                 <div className="flex flex-wrap gap-2 mb-4">
                     {productImages.map((img, idx) => (
                         idx !== currentImageIndex && (
-                            <div key={idx} className="relative w-16 h-16 bg-gray-100 rounded group">
+                            <div key={idx} className="relative size-9 bg-gray-100 rounded group">
                                 <Image
                                     src={img.url}
                                     alt={`Imagen ${idx + 1}`}
@@ -163,11 +162,11 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
             )}
 
             <div
-                className="border-2 border-dashed border-input rounded-lg p-6 text-center cursor-pointer"
+                className="border-2 border-dashed border-input rounded-lg p-2 text-center cursor-pointer"
                 onClick={currentImageIndex === null ? triggerFileInput : undefined}
             >
                 {currentImageIndex !== null && productImages.length > 0 ? (
-                    <div className="relative w-full h-64 group">
+                    <div className="relative w-full h-28 group">
                         <Image
                             src={productImages[currentImageIndex].url}
                             alt="Imagen actual"
@@ -223,7 +222,7 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                         </div>
                     </div>
                 ) : (
-                    <div className='flex flex-col items-center justify-center h-64 gap-2'>
+                    <div className='flex flex-col items-center justify-center h-28 gap-2'>
                         <p className="text-sm text-gray-500 mb-2">Arrastre una imagen o haga clic para seleccionar</p>
                         <ImagePlus className='size-10 text-gray-500' />
                     </div>

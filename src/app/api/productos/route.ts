@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Moneda, UnidadVenta } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -9,25 +9,6 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-export async function GET() {
-    try {
-        const productos = await prisma.producto.findMany({
-            include: {
-                categoria: true,
-                subcategoria: true,
-                stock: true
-            }
-        });
-        return NextResponse.json(productos, { status: 200 });
-    } catch (error) {
-        console.error('Error al obtener productos:', error);
-        return NextResponse.json({
-            message: 'Error al obtener productos',
-            error: (error as Error).message
-        }, { status: 500 });
-    }
-}
 
 export async function POST(request: Request) {
     try {
@@ -50,7 +31,7 @@ export async function POST(request: Request) {
                     folder: "prueba/productos",
                     resource_type: "auto",
                 });
-                
+
                 // Reemplazar el base64 con la URL de Cloudinary
                 imageUrl = result.secure_url;
                 body.foto = imageUrl;
@@ -66,7 +47,7 @@ export async function POST(request: Request) {
 
         // Validar los campos requeridos
         if (!body.codigo || !body.descripcion || !body.unidadVenta ||
-            !body.categoriaId || !body.confUnidadVenta ||
+            !body.subcategoriaId || !body.confUnidadVenta ||
             !body.moneda || body.valorVenta === undefined || body.tasaImpuesto === undefined) {
             return NextResponse.json({
                 message: 'Faltan campos requeridos'
@@ -78,31 +59,36 @@ export async function POST(request: Request) {
             ? body.precioVenta
             : body.valorVenta * (1 + body.tasaImpuesto / 100);
 
-        // Crear el producto en la base de datos de manera simple
+        // Convertir stock a entero
+        let stock = 0;
+        if (body.stockFisico !== undefined) {
+            stock = parseInt(body.stockFisico);
+        } else if (body.stock !== undefined) {
+            stock = parseInt(body.stock);
+        }
+
+        // Crear el producto en la base de datos
         const nuevoProducto = await prisma.producto.create({
             data: {
                 codigo: body.codigo,
                 descripcion: body.descripcion,
                 unidadVenta: body.unidadVenta as UnidadVenta,
-                categoriaId: body.categoriaId,
-                subcategoriaId: body.subcategoriaId || null,
+                // Usamos subcategoriaId directamente en lugar de categoriaId
+                subcategoriaId: body.subcategoriaId,
                 confUnidadVenta: body.confUnidadVenta,
                 infoAdicional: body.infoAdicional || null,
                 estado: 'A', // Por defecto, activo
                 foto: body.foto || null, // URL de la imagen de Cloudinary
                 moneda: body.moneda as Moneda,
-                valorVenta: body.valorVenta,
-                tasaImpuesto: body.tasaImpuesto,
-                precioVenta: precioVenta,
-            }
-        });
-
-        // Crear el registro de stock asociado
-        await prisma.stock.create({
-            data: {
-                productoId: nuevoProducto.codigo,
-                stockComprometido: body.stockComprometido || 0,
-                stockFisico: body.stockFisico || 0,
+                valorVenta: parseFloat(body.valorVenta),
+                tasaImpuesto: parseFloat(body.tasaImpuesto),
+                precioVenta: parseFloat(precioVenta.toFixed(2)),
+                stockRegistro: {
+                    create: {
+                        stockFisico: body.stockFisico,
+                        stockComprometido: body.stockComprometido
+                    }
+                }
             }
         });
 
@@ -110,9 +96,7 @@ export async function POST(request: Request) {
         const productoCompleto = await prisma.producto.findUnique({
             where: { codigo: nuevoProducto.codigo },
             include: {
-                categoria: true,
                 subcategoria: true,
-                stock: true
             }
         });
 
@@ -125,5 +109,87 @@ export async function POST(request: Request) {
             message: 'Error al crear producto',
             error: (error as Error).message
         }, { status: 500 });
+    }
+}
+
+
+export async function GET(req: NextRequest) {
+    try {
+        const searchParams = req.nextUrl.searchParams;
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '6');
+        const search = searchParams.get('search') || '';
+        const sortBy = searchParams.get('sortBy') || 'createdAt';
+        const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+        const skip = (page - 1) * limit;
+
+        const orderBy: Record<string, 'asc' | 'desc'> = {};
+
+        if (sortBy) {
+            orderBy[sortBy] = sortOrder as 'asc' | 'desc';
+        }
+
+        const totalProducts = await prisma.producto.count({
+            where: {
+                descripcion: {
+                    contains: search,
+                    mode: 'insensitive',
+                }
+            }
+        })
+
+        const productosRaw = await prisma.producto.findMany({
+            where: {
+                descripcion: {
+                    contains: search,
+                    mode: 'insensitive',
+                }
+            },
+            include: {
+                subcategoria: {
+                    select: {
+                        nombre: true
+                    }
+                },
+                stockRegistro: {
+                    select: {
+                        stockComprometido: true,
+                        stockFisico: true
+                    }
+                }
+            },
+            orderBy,
+            skip,
+            take: limit
+        });
+
+        const totalPages = Math.ceil(totalProducts / limit);
+
+
+
+        const productos = productosRaw.map(producto => {
+            const { subcategoria, stockRegistro, ...rest } = producto;
+            return {
+                ...rest,
+                subcategoria: subcategoria?.nombre || '',
+                stockFisico: stockRegistro?.stockFisico || 0,
+                stockComprometido: stockRegistro?.stockComprometido || 0
+            };
+        });
+
+        return Response.json({
+            productos,
+            totalProducts,
+            totalPages,
+            currentPage: page,
+        });
+
+    } catch (error) {
+        console.error('Error al obtener productos:', error);
+        return Response.json(
+            { success: false, error: "Error al obtener productos", details: error },
+            { status: 500 }
+        );
     }
 }

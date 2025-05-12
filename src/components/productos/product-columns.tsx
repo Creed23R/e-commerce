@@ -1,29 +1,54 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
-import { PrismaProduct } from "@/types/product";
+import { Badge } from "@/components/ui/badge";
+import { ProductoType } from "@/types/product";
 import { ColumnDef } from "@tanstack/react-table";
 import { ChevronsUpDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
-export const columns: ColumnDef<PrismaProduct>[] = [
+// Función para formatear moneda
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN'
+    }).format(amount);
+};
+
+// Función para formatear fecha en español
+const formatDateToSpanish = (date: Date) => {
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+export const columns: ColumnDef<ProductoType>[] = [
     {
-        accessorKey: "codigo",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Código
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => <div className="font-medium">{row.getValue("codigo")}</div>,
+        id: "select",
+        header: ({ table }) => (
+            <Checkbox
+                checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                }
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select row"
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
     },
     {
         accessorKey: "descripcion",
@@ -33,23 +58,23 @@ export const columns: ColumnDef<PrismaProduct>[] = [
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    Descripción
+                    Título
                     <ChevronsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
         cell: ({ row }) => {
-            const descripcion = row.getValue("descripcion") as string;
-            const foto = row.original.foto as string | null;
-            const slug = 'productos/' + row.original.codigo as string;
+            const title = row.getValue("descripcion") as string;
+            const image = row.original.foto as string | null;
+            const estado = row.original.estado
 
             return (
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 relative rounded overflow-hidden flex-shrink-0">
-                        {foto ? (
+                        {image ? (
                             <Image
-                                src={foto}
-                                alt={descripcion}
+                                src={image}
+                                alt={title}
                                 fill
                                 unoptimized={true}
                                 className="object-cover border rounded-md"
@@ -60,7 +85,7 @@ export const columns: ColumnDef<PrismaProduct>[] = [
                             </div>
                         )}
                     </div>
-                    <Link href={slug} className="font-medium capitalize text-sky-600">{descripcion}</Link>
+                    <p className={cn('font-medium capitalize', estado == 'A' ? 'text-sky-600' : 'text-red-400')}>{title}</p>
                 </div>
             );
         },
@@ -80,17 +105,24 @@ export const columns: ColumnDef<PrismaProduct>[] = [
         },
         cell: ({ row }) => {
             const precioVenta = row.getValue("precioVenta") as number;
-            const moneda = row.original.moneda;
+            const valorVenta = row.original.valorVenta as number;
 
             return (
                 <div>
-                    <span>{formatCurrency(precioVenta, moneda === 'PEN' ? 'PEN' : moneda)}</span>
+                    {valorVenta !== precioVenta ? (
+                        <div>
+                            <span className="line-through text-gray-500">{formatCurrency(valorVenta)}</span>
+                            <span className="ml-2 font-semibold text-green-600">{formatCurrency(precioVenta)}</span>
+                        </div>
+                    ) : (
+                        <span>{formatCurrency(precioVenta)}</span>
+                    )}
                 </div>
             );
         },
     },
     {
-        accessorKey: "stock",
+        accessorKey: "stockFisico",
         header: ({ column }) => {
             return (
                 <Button
@@ -103,53 +135,63 @@ export const columns: ColumnDef<PrismaProduct>[] = [
             );
         },
         cell: ({ row }) => {
-            const stock = row.original.stock;
-            const stockFisico = stock?.stockFisico || 0;
+            const stock = row.getValue("stockFisico") as number;
+            const comprometido = row.original.stockComprometido as number;
 
             return (
                 <div>
-                    {stockFisico <= 5 ? (
-                        <span className="text-red-500 font-semibold">{stockFisico}</span>
+                    {stock <= 5 ? (
+                        <span className="text-red-500 font-semibold">{stock}</span>
                     ) : (
-                        <span>{stockFisico}</span>
+                        <span>{stock}</span>
+                    )}
+                    {comprometido > 0 && (
+                        <span className="text-xs text-muted-foreground ml-1">({comprometido} reservados)</span>
                     )}
                 </div>
             );
         },
     },
     {
-        accessorKey: "categoria",
+        accessorKey: "subcategoria",
         header: "Categoría",
         cell: ({ row }) => {
-            const categoria = row.original.categoria;
-            return <span className="text-muted-foreground text-xs">{categoria?.nombre || "Sin categoría"}</span>;
+            const subcategoria = row.original.subcategoria;
+            return <span className="text-muted-foreground text-xs">{subcategoria}</span>;
         },
     },
     {
-        accessorKey: "unidadVenta",
-        header: "Unidad",
+        accessorKey: "codigo",
+        header: "Código",
         cell: ({ row }) => {
-            const unidadVenta = row.getValue("unidadVenta") as string;
-            return (
-                <Badge variant="secondary" className="text-xs uppercase">
-                    {unidadVenta}
-                </Badge>
-            );
+            const codigo = row.original.codigo;
+            return <span className="text-xs uppercase">{codigo}</span>;
         },
     },
     {
-        accessorKey: "estado",
-        header: "Estado",
+        accessorKey: "moneda",
+        header: "Moneda",
         cell: ({ row }) => {
-            const estado = row.getValue("estado") as string;
-            const isActive = estado === 'A';
+            const moneda = row.original.moneda;
+            return <span className="text-xs text-sky-600">{moneda}</span>;
+        },
+    },
+    {
+        accessorKey: "createdAt",
+        header: ({ column }) => {
             return (
-                <Badge
-                    className="text-xs uppercase"
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    {isActive ? "Activo" : "Inactivo"}
-                </Badge>
+                    Fecha
+                    <ChevronsUpDown className="ml-2 h-4 w-4" />
+                </Button>
             );
         },
-    }
+        cell: ({ row }) => {
+            const date = new Date(row.getValue("createdAt") as string);
+            return <span className="capitalize text-xs text-muted-foreground">{formatDateToSpanish(date)}</span>;
+        },
+    },
 ];

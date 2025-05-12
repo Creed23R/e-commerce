@@ -15,10 +15,11 @@ import {
     flexRender,
     getCoreRowModel,
     getSortedRowModel,
-    useReactTable
+    useReactTable,
+    RowSelectionState
 } from "@tanstack/react-table";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface ProductTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -26,10 +27,11 @@ interface ProductTableProps<TData, TValue> {
     pageCount: number;
     currentPage: number;
     onPageChange: (page: number) => void;
-    onSort: (columnId: string, direction: 'asc' | 'desc') => void;
     pageSize: number;
     totalItems: number;
     isLoading?: boolean;
+    rowSelection?: RowSelectionState;
+    onRowSelectionChange?: (updaterOrValue: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)) => void;
 }
 
 export function ProductTable<TData, TValue>({
@@ -38,18 +40,14 @@ export function ProductTable<TData, TValue>({
     pageCount,
     currentPage,
     onPageChange,
-    onSort,
+    pageSize,
+    totalItems,
     isLoading = false,
+    rowSelection = {},
+    onRowSelectionChange
 }: ProductTableProps<TData, TValue>) {
 
     const [sorting, setSorting] = useState<SortingState>([]);
-
-    useEffect(() => {
-        if (sorting.length > 0) {
-            const { id, desc } = sorting[0];
-            onSort(id, desc ? 'desc' : 'asc');
-        }
-    }, [sorting, onSort]);
 
     const table = useReactTable({
         data,
@@ -59,11 +57,17 @@ export function ProductTable<TData, TValue>({
         pageCount,
         state: {
             sorting,
+            rowSelection,
         },
+        enableRowSelection: true,
+        onRowSelectionChange,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     });
+
+    const startIndex = (currentPage - 1) * pageSize + 1;
+    const endIndex = Math.min(startIndex + data.length - 1, totalItems);
 
     const handlePageChange = (newPage: number) => {
         onPageChange(newPage);
@@ -71,6 +75,12 @@ export function ProductTable<TData, TValue>({
 
     return (
         <div className="space-y-4">
+            <div>
+                <p className="text-xs text-muted-foreground">
+                    Mostrando {data.length > 0 ? `${startIndex}-${endIndex} de ${totalItems}` : '0'} productos
+                </p>
+            </div>
+
             <div>
                 <Table>
                     <TableHeader>
@@ -115,7 +125,7 @@ export function ProductTable<TData, TValue>({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                <TableCell className="h-24 text-center">
                                     No hay resultados.
                                 </TableCell>
                             </TableRow>

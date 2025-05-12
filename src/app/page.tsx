@@ -36,7 +36,7 @@ const items = [
   },
 ]
 
-export default async function Page() {
+export default function Page() {
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -51,7 +51,7 @@ export default async function Page() {
               <CardDescription>{item.description}</CardDescription>
             </CardHeader>
             <CardFooter>
-              <Link className="w-full" href={`/${item.url}`}>
+              <Link className="w-full" href={`${item.url}`}>
                 <Button variant="outline" className="w-full">
                   Ver {item.name}
                 </Button>
