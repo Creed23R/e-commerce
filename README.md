@@ -35,7 +35,4 @@ La aplicación fue desplegada exitosamente en **Vercel**.
 
 ## 🔌 API Base
 
-La app se conecta a la API NestJS en:
-
-```ts
-export const API_URL = 'https://tu-api-nest.vercel.app'; // o tu backend local
+La app se conecta a la API NestJS en: https://backend-production-9518.up.railway.app/
