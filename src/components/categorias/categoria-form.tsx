@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Input } from "@/components/ui/input";
+import AddProductImage, { ProductImage } from '@/components/productos/add-product-image';
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,10 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { CategoriaType } from '@/types/categorias';
-import AddProductImage, { ProductImage } from '@/components/productos/add-product-image';
+import { Loader2 } from "lucide-react";
+import React, { useState } from 'react';
 
 interface CategoriaFormProps {
   categoria?: Partial<CategoriaType>;
@@ -58,7 +58,7 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
 
     setIsLoading(true);
     try {
-      const { subcategorias, foto, ...dataToSubmit } = formData as any;
+      const dataToSubmit = { ...formData };
       await onSubmit(dataToSubmit, imagen || undefined);
     } catch (error) {
       console.error("Error al guardar la categoría:", error);
@@ -96,7 +96,7 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
           <Select
             name="estado"
             value={formData.estado}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, estado: value as any }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, estado: value as 'A' | 'I' }))}
           >
             <SelectTrigger className='w-full'>
               <SelectValue placeholder="Selecciona un estado" />

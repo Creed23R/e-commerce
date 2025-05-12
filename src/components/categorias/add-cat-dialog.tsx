@@ -51,7 +51,7 @@ export function AddCatDialog({
     const [errors, setErrors] = useState<FormErrors>({});
     const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
     const [categoriaImage, setCategoriaImage] = useState<File | null>(null);
-
+    console.log("categoriaImage", productImages);
     const handleImageChange = (files: ProductImage[] | null) => {
         setProductImages(files);
 

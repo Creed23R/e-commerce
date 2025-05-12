@@ -19,7 +19,6 @@ export function ProductsContent() {
     const [pageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchInputValue, setSearchInputValue] = useState('');
-    const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
     const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);

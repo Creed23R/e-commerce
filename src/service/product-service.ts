@@ -1,6 +1,6 @@
 import { ProductoType } from "@/types/product";
-import { QueryClient, useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo } from 'react';
 import { API_URL } from "../../const";
 
 const API_URL_PRODUCT = `${API_URL}/productos`;
@@ -84,6 +84,8 @@ const createProduct = async (productData: { data: Partial<ProductoType>, imagen?
 const updateProduct = async (productData: { data: ProductoType, imagen?: File }): Promise<ProductoType> => {
     const { data, imagen } = productData;
 
+    console.log('Actualizando producto:', data);
+
     if (!data.id) {
         throw new Error('ID de producto requerido para actualizar');
     }
@@ -112,7 +114,7 @@ const updateProduct = async (productData: { data: ProductoType, imagen?: File })
 };
 
 // Función para actualizar precios masivamente
-const updatePrices = async (data: PriceUpdateData): Promise<any> => {
+const updatePrices = async (data: PriceUpdateData): Promise<PriceUpdateData> => {
 
 
     const response = await fetch(`${API_URL_PRODUCT}/update-prices`, {
@@ -131,7 +133,7 @@ const updatePrices = async (data: PriceUpdateData): Promise<any> => {
 };
 
 // Función para actualizar estados masivamente
-const updateStates = async (data: StateUpdateData): Promise<any> => {
+const updateStates = async (data: StateUpdateData): Promise<StateUpdateData> => {
     const response = await fetch(`${API_URL_PRODUCT}/update-state`, {
         method: 'POST',
         headers: {
@@ -200,7 +202,7 @@ export function useCreateProduct() {
 
     return useMutation({
         mutationFn: (productData: { data: Partial<ProductoType>, imagen?: File }) => createProduct(productData),
-        onSuccess: (data) => {
+        onSuccess: () => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
@@ -211,9 +213,7 @@ export function useCreateProduct() {
 }
 
 export function useProducts(params: ProductsParams = {}) {
-    const { page = 1, pageSize = 10, search = '' } = params;
-
-    const prevParamsRef = useRef({ page, search });
+    const { page = 1, pageSize = 10 } = params;
 
     const queryKey = getQueryKey(params);
 
@@ -227,11 +227,9 @@ export function useProducts(params: ProductsParams = {}) {
         refetchOnWindowFocus: false,
     });
 
-    // Actualizar mutación para crear productos
     const createProductMutation = useMutation({
         mutationFn: (productData: { data: Partial<ProductoType>, imagen?: File }) => createProduct(productData),
-        onSuccess: (data) => {
-            // Invalidar la caché para que se actualice la lista de productos
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
         onError: (error) => {
@@ -242,7 +240,7 @@ export function useProducts(params: ProductsParams = {}) {
     // Actualizar mutación para actualizar productos
     const updateProductMutation = useMutation({
         mutationFn: (productData: { data: ProductoType, imagen?: File }) => updateProduct(productData),
-        onSuccess: (data) => {
+        onSuccess: () => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
@@ -254,7 +252,7 @@ export function useProducts(params: ProductsParams = {}) {
     // Añadir mutación para actualizar precios
     const updatePricesMutation = useMutation({
         mutationFn: (priceUpdateData: PriceUpdateData) => updatePrices(priceUpdateData),
-        onSuccess: (data) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
         onError: (error) => {
@@ -265,7 +263,7 @@ export function useProducts(params: ProductsParams = {}) {
     // Añadir mutación para actualizar estados
     const updateStatesMutation = useMutation({
         mutationFn: (stateUpdateData: StateUpdateData) => updateStates(stateUpdateData),
-        onSuccess: (data) => {
+        onSuccess: () => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
@@ -273,16 +271,6 @@ export function useProducts(params: ProductsParams = {}) {
             console.error('Error al actualizar los estados:', error);
         }
     });
-
-    const searchChanged = useMemo(() => {
-        const prevParams = prevParamsRef.current;
-
-        const hasChanged = search !== prevParams.search;
-
-        prevParamsRef.current = { page, search };
-
-        return hasChanged;
-    }, [page, search]);
 
     const visibleProducts = useMemo(() => {
         if (data) {

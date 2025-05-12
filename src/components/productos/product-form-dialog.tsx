@@ -1,7 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -11,16 +13,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import AddProductImage, { ProductImage } from "./add-product-image";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { ProductoType } from "@/types/product";
 import { Moneda } from "@/types/moneda";
+import { ProductoType } from "@/types/product";
 import { UnidadVenta } from "@/types/unidad-venta";
+import { Loader2 } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useState, useMemo } from "react";
+import { toast } from "sonner";
 import { API_URL } from "../../../const";
+import AddProductImage, { ProductImage } from "./add-product-image";
 
 interface ProductFormErrors {
     codigo?: string;
@@ -56,7 +56,7 @@ export function ProductFormDialog({
     onSubmit,
     isLoading = false,
 }: ProductFormDialogProps) {
-    const defaultValues: ProductoType = {
+    const defaultValues = useMemo(() => ({
         codigo: "",
         descripcion: "",
         unidadVenta: "BARn",
@@ -73,13 +73,12 @@ export function ProductFormDialog({
         stockFisico: 0,
         stockComprometido: 0,
         ...(initialData || {})
-    };
+    }), [initialData]);
 
     const [formData, setFormData] = useState<ProductoType>(defaultValues);
     const [errors, setErrors] = useState<ProductFormErrors>({});
     const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
     const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
-    const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
     const [productImage, setProductImage] = useState<File | null>(null);
 
     useEffect(() => {
@@ -87,7 +86,7 @@ export function ProductFormDialog({
             setFormData(defaultValues);
             setErrors({});
         }
-    }, [open]);
+    }, [open, defaultValues]);
 
     useEffect(() => {
         const fetchSubcategorias = async () => {
@@ -154,7 +153,6 @@ export function ProductFormDialog({
     };
 
     const handleImageChange = (files: ProductImage[] | null) => {
-        setProductImages(files);
 
         if (files && files.length > 0) {
             const mainImage = files.find(file => file.isMain);

@@ -1,19 +1,12 @@
 "use client"
 
 import {
-  BookOpen,
-  Bot,
   Folder,
-  FolderOpen,
   Frame,
   GalleryVerticalEnd,
-  Layers,
   Map,
   Package,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-  Tag
+  PieChart
 } from "lucide-react"
 import * as React from "react"
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useState, useEffect } from 'react';
+import React, { FormEvent, useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -44,21 +44,19 @@ export function UpdateSubDialog({ subcategoria, open, onOpenChange }: UpdateSubD
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
 
-    const defaultValues: SubcategoriaType = {
+    const defaultValues = useMemo(() => ({
         id: '',
         nombre: '',
         descripcion: '',
         foto: '',
-        estado: 'A',
+        estado: 'A' as 'A' | 'I',
         icon: 'fa-tag',
         categoriaId: '',
         createdAt: new Date(),
-    };
+    }), []);
 
     const [formData, setFormData] = useState<SubcategoriaType>({ ...defaultValues });
-    const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
     const [subcategoriaImage, setSubcategoriaImage] = useState<File | null>(null);
-
     // Reiniciar el formulario cuando se abre el diálogo o cambia los datos iniciales
     useEffect(() => {
         if (open && subcategoria) {
@@ -68,7 +66,7 @@ export function UpdateSubDialog({ subcategoria, open, onOpenChange }: UpdateSubD
             });
             setErrors({});
         }
-    }, [open, subcategoria]);
+    }, [open, subcategoria, defaultValues]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -90,7 +88,6 @@ export function UpdateSubDialog({ subcategoria, open, onOpenChange }: UpdateSubD
     };
 
     const handleImageChange = (files: ProductImage[] | null) => {
-        setProductImages(files);
 
         if (files && files.length > 0) {
             const mainImage = files.find(file => file.isMain) || files[0];

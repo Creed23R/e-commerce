@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useState, useEffect } from 'react';
+import React, { FormEvent, useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -32,6 +32,7 @@ interface FormErrors {
     foto?: string;
 }
 
+
 export function UpdateCatDialog({
     open,
     onOpenChange,
@@ -40,20 +41,19 @@ export function UpdateCatDialog({
     onCancel,
     isLoading = false
 }: UpdateCatDialogProps) {
-    const defaultValues: CategoriaType = {
+    const defaultValues = useMemo(() => ({
         id: '',
         nombre: '',
         descripcion: '',
         foto: '',
-        estado: 'A',
+        estado: 'A' as 'A' | 'I',
         icon: '',
         subcategorias: [],
         createdAt: new Date(),
-    };
+    }), []);
 
     const [formData, setFormData] = useState<CategoriaType>({ ...defaultValues });
     const [errors, setErrors] = useState<FormErrors>({});
-    const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
     const [categoriaImage, setCategoriaImage] = useState<File | null>(null);
 
     // Reiniciar el formulario cuando se abre el diálogo o cambia los datos iniciales
@@ -65,10 +65,9 @@ export function UpdateCatDialog({
             });
             setErrors({});
         }
-    }, [open, initialData]);
+    }, [open, initialData, defaultValues]);
 
     const handleImageChange = (files: ProductImage[] | null) => {
-        setProductImages(files);
 
         if (files && files.length > 0) {
             const mainImage = files.find(file => file.isMain);
