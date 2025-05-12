@@ -6,6 +6,7 @@ import PostgreSQL from "@/components/icons/postgresql";
 import Prisma from "@/components/icons/prisma";
 import React from "@/components/icons/react";
 import ReactQuery from "@/components/icons/reactquery";
+import V0 from "@/components/icons/v0";
 import TanStack from "@/components/icons/tanstack";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,12 +36,15 @@ export default async function Page() {
           <p>
             <strong>Frontend:</strong> Desarrollado con <strong>React</strong> y <strong>Next.js</strong>, utilizando <strong>Tailwind CSS</strong> para estilos y <strong>shadcn/ui</strong> y <strong>Radix UI</strong> para componentes. Gestión de datos con <strong>TanStack Query</strong> y <strong>TanStack Table</strong>.
           </p>
+          <br />
           <p>
             <strong>Backend:</strong> Implementado con <strong>NestJS</strong> y <strong>Prisma ORM</strong>, usando <strong>PostgreSQL</strong> como base de datos. Integración de <strong>Cloudinary</strong> para gestión de imágenes.
           </p>
+          <br />
           <p>
             <strong>Móvil:</strong> Creado con <strong>React Native</strong> y <strong>Expo Go</strong>, permitiendo una experiencia multiplataforma.
           </p>
+          <br />
           <p>
             <strong>Despliegue:</strong> Backend y base de datos desplegados en <strong>Railway</strong>, frontend en <strong>Vercel</strong> con CI/CD.
           </p>
@@ -55,6 +59,7 @@ export default async function Page() {
             <Prisma className="size-7" />
             <ReactQuery className="size-7" />
             <TanStack className="size-7" />
+            <V0 className="size-7" />
           </div>
         </CardContent>
       </Card>
