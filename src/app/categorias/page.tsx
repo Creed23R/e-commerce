@@ -1,99 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Categoria, Subcategoria } from '@prisma/client';
+import React from 'react';
 import { CategoriaCard } from '@/components/categorias/categoria-card';
-import { CategoriaForm } from '@/components/categorias/categoria-form';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCategorias, createCategoria, updateCategoria, toggleCategoriaStatus } from '@/service/categoria-service';
-import { toast } from 'sonner';
+import { useCategorias } from '@/service/categoria-service';
 import { CategoriaType, SubcategoriaType } from '@/types/categorias';
+import { AddCatDialog } from '@/components/categorias/add-cat-dialog';
+import { UpdateCatDialog } from '@/components/categorias/update-cat-dialog';
 
 type CategoriaWithSubcategorias = CategoriaType & {
     subcategorias: SubcategoriaType[];
 };
 
 export default function CategoryPage() {
-    const queryClient = useQueryClient();
-
-    const [showModal, setShowModal] = useState(false);
-    const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
-
-    const { data: categories = [], isLoading, error: queryError } = useQuery({
-        queryKey: ['categorias'],
-        queryFn: getCategorias,
-    });
-
-    const createMutation = useMutation({
-        mutationFn: createCategoria,
-        onSuccess: () => {
-            toast.success('Categoría creada con éxito');
-            queryClient.invalidateQueries({ queryKey: ['categorias'] });
-            setShowModal(false);
-            setEditingCategoria(null);
-        },
-        onError: (error) => {
-            toast.error(`Error al crear categoría: ${error.message}`);
-        },
-    });
-
-    const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Categoria> }) =>
-            updateCategoria(id, data),
-        onSuccess: () => {
-            toast.success('Categoría actualizada con éxito');
-            queryClient.invalidateQueries({ queryKey: ['categorias'] });
-            setShowModal(false);
-            setEditingCategoria(null);
-        },
-        onError: (error) => {
-            toast.error(`Error al actualizar categoría: ${error.message}`);
-        },
-    });
-
-    const toggleStatusMutation = useMutation({
-        mutationFn: toggleCategoriaStatus,
-        onSuccess: () => {
-            toast.success('Estado actualizado con éxito');
-            queryClient.invalidateQueries({ queryKey: ['categorias'] });
-        },
-        onError: (error) => {
-            toast.error(`Error al cambiar estado: ${error.message}`);
-        },
-    });
-
-    const handleSubmitCategoria = async (formData: Partial<Categoria>) => {
-        if (editingCategoria) {
-            updateMutation.mutate({ id: editingCategoria.id, data: formData });
-        } else {
-            createMutation.mutate(formData);
-        }
-    };
-
-    const handleToggleStatus = async (id: string) => {
-        toggleStatusMutation.mutate(id);
-    };
-
-    const handleEdit = (categoria: Categoria) => {
-        setEditingCategoria(categoria);
-        setShowModal(true);
-    };
-
-    const handleNewCategory = () => {
-        setEditingCategoria(null);
-        setShowModal(true);
-    };
-
-    const isMutating = createMutation.isPending || updateMutation.isPending || toggleStatusMutation.isPending;
+    const {
+        categorias,
+        isLoading,
+        showModal,
+        setShowModal,
+        editingCategoria,
+        isMutating,
+        handleSubmitCategoria,
+        handleToggleStatus,
+        handleEdit,
+        handleNewCategory,
+        closeModal
+    } = useCategorias();
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -120,8 +53,8 @@ export default function CategoryPage() {
 
             {!isLoading && (
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                    {categories.length > 0 ? (
-                        categories.map((categoria: CategoriaWithSubcategorias) => (
+                    {categorias.length > 0 ? (
+                        categorias.map((categoria: CategoriaWithSubcategorias) => (
                             <CategoriaCard
                                 key={categoria.id}
                                 categoria={categoria}
@@ -138,27 +71,32 @@ export default function CategoryPage() {
                 </div>
             )}
 
-            <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingCategoria ? 'Editar' : 'Nueva'} Categoría</DialogTitle>
-                        <DialogDescription>
-                            {editingCategoria
-                                ? 'Modifica los detalles de la categoría existente'
-                                : 'Completa el formulario para crear una nueva categoría'}
-                        </DialogDescription>
-                    </DialogHeader>
+            <AddCatDialog 
+                open={showModal && !editingCategoria}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeModal();
+                    }
+                    setShowModal(open);
+                }}
+                onSubmit={handleSubmitCategoria}
+                onCancel={closeModal}
+                isLoading={isMutating}
+            />
 
-                    <CategoriaForm
-                        categoria={editingCategoria || undefined}
-                        onSubmit={handleSubmitCategoria}
-                        onCancel={() => {
-                            setShowModal(false);
-                            setEditingCategoria(null);
-                        }}
-                    />
-                </DialogContent>
-            </Dialog>
+            <UpdateCatDialog
+                open={showModal && !!editingCategoria}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeModal();
+                    }
+                    setShowModal(open);
+                }}
+                initialData={editingCategoria}
+                onSubmit={handleSubmitCategoria}
+                onCancel={closeModal}
+                isLoading={isMutating}
+            />
         </div>
     );
 }

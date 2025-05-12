@@ -36,7 +36,6 @@ export const SubcategoriaList = ({ subcategorias, categoriaId }: SubcategoriaLis
         <p className="text-muted-foreground">No hay subcategorías</p>
         <Button
           onClick={() => setAddDialogOpen(true)}
-          className="mt-2 inline-flex items-center text-sm font-medium text-primary hover:text-primary/80"
         >
           <PlusCircle className="w-5 h-5 mr-1" />
           Añadir subcategoría

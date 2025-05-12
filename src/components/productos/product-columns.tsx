@@ -1,16 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import { ProductoType } from "@/types/product";
 import { ColumnDef } from "@tanstack/react-table";
 import { ChevronsUpDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 
-// Función para formatear moneda
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
         style: 'currency',
@@ -18,7 +16,6 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-// Función para formatear fecha en español
 const formatDateToSpanish = (date: Date) => {
     return date.toLocaleDateString('es-ES', {
         year: 'numeric',
@@ -67,6 +64,7 @@ export const columns: ColumnDef<ProductoType>[] = [
             const title = row.getValue("descripcion") as string;
             const image = row.original.foto as string | null;
             const estado = row.original.estado
+            const id = row.original.id as string;
 
             return (
                 <div className="flex items-center gap-3">
@@ -85,7 +83,7 @@ export const columns: ColumnDef<ProductoType>[] = [
                             </div>
                         )}
                     </div>
-                    <p className={cn('font-medium capitalize', estado == 'A' ? 'text-sky-600' : 'text-red-400')}>{title}</p>
+                    <Link href={`/productos/${id}`} className={cn('animate-pulse font-medium capitalize', estado == 'A' ? 'text-sky-600' : 'text-red-400')}>{title}</Link>
                 </div>
             );
         },

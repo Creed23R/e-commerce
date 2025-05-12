@@ -1,6 +1,9 @@
-import { Categoria } from '@prisma/client';
+import { CategoriaType } from "@/types/categorias";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { API_URL } from "../../const";
 
-const API_URL = 'http://localhost:3000/api';
 
 // Función para obtener todas las categorías
 export async function getCategorias() {
@@ -14,13 +17,21 @@ export async function getCategorias() {
 }
 
 // Función para crear una nueva categoría
-export async function createCategoria(data: Partial<Categoria>) {
+export async function createCategoria(data: Partial<CategoriaType>, imagen?: File) {
+    // Crear un FormData para enviar los datos y la imagen
+    const formData = new FormData();
+
+    // Añadir los datos de la categoría como JSON
+    formData.append('createCategoriaDto', JSON.stringify(data));
+
+    // Añadir la imagen si existe
+    if (imagen) {
+        formData.append('imagen', imagen);
+    }
+
     const response = await fetch(`${API_URL}/categorias`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        body: formData,
     });
 
     if (!response.ok) {
@@ -31,13 +42,21 @@ export async function createCategoria(data: Partial<Categoria>) {
 }
 
 // Función para actualizar una categoría existente
-export async function updateCategoria(id: string, data: Partial<Categoria>) {
+export async function updateCategoria(id: string, data: Partial<CategoriaType>, imagen?: File) {
+    // Crear un FormData para enviar los datos y la imagen
+    const formData = new FormData();
+
+    // Añadir los datos de la categoría como JSON
+    formData.append('updateCategoriaDto', JSON.stringify(data));
+
+    // Añadir la imagen si existe
+    if (imagen) {
+        formData.append('imagen', imagen);
+    }
+
     const response = await fetch(`${API_URL}/categorias/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        body: formData,
     });
 
     if (!response.ok) {
@@ -61,13 +80,10 @@ export async function toggleCategoriaStatus(id: string) {
 }
 
 // Función para crear una nueva subcategoría
-export async function createSubcategoria(data: any) {
+export async function createSubcategoria(formData: FormData) {
     const response = await fetch(`${API_URL}/subcategorias`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        body: formData, // Enviamos directamente el FormData que contiene los datos y la imagen
     });
 
     if (!response.ok) {
@@ -77,14 +93,10 @@ export async function createSubcategoria(data: any) {
     return response.json();
 }
 
-// Función para actualizar una subcategoría existente
-export async function updateSubcategoria(id: string, data: any) {
+export async function updateSubcategoria(id: string, formData: FormData) {
     const response = await fetch(`${API_URL}/subcategorias/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        body: formData,
     });
 
     if (!response.ok) {
@@ -92,4 +104,98 @@ export async function updateSubcategoria(id: string, data: any) {
     }
 
     return response.json();
+}
+
+export function useCategorias() {
+    const queryClient = useQueryClient();
+    const [showModal, setShowModal] = useState(false);
+    const [editingCategoria, setEditingCategoria] = useState<CategoriaType | null>(null);
+
+    const { data: categorias = [], isLoading, error } = useQuery({
+        queryKey: ['categorias'],
+        queryFn: getCategorias,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: ({ data, imagen }: { data: Partial<CategoriaType>, imagen?: File }) =>
+            createCategoria(data, imagen),
+        onSuccess: () => {
+            toast.success('Categoría creada con éxito');
+            queryClient.invalidateQueries({ queryKey: ['categorias'] });
+            setShowModal(false);
+            setEditingCategoria(null);
+        },
+        onError: (error) => {
+            toast.error(`Error al crear categoría: ${error.message}`);
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data, imagen }: { id: string; data: Partial<CategoriaType>, imagen?: File }) =>
+            updateCategoria(id, data, imagen),
+        onSuccess: () => {
+            toast.success('Categoría actualizada con éxito');
+            queryClient.invalidateQueries({ queryKey: ['categorias'] });
+            setShowModal(false);
+            setEditingCategoria(null);
+        },
+        onError: (error) => {
+            toast.error(`Error al actualizar categoría: ${error.message}`);
+        },
+    });
+
+    const toggleStatusMutation = useMutation({
+        mutationFn: toggleCategoriaStatus,
+        onSuccess: () => {
+            toast.success('Estado actualizado con éxito');
+            queryClient.invalidateQueries({ queryKey: ['categorias'] });
+        },
+        onError: (error) => {
+            toast.error(`Error al cambiar estado: ${error.message}`);
+        },
+    });
+
+    const handleSubmitCategoria = async (formData: Partial<CategoriaType>, imagen?: File) => {
+        if (editingCategoria) {
+            updateMutation.mutate({ id: editingCategoria.id, data: formData, imagen });
+        } else {
+            createMutation.mutate({ data: formData, imagen });
+        }
+    };
+
+    const handleToggleStatus = async (id: string) => {
+        toggleStatusMutation.mutate(id);
+    };
+
+    const handleEdit = (categoria: CategoriaType) => {
+        setEditingCategoria(categoria);
+        setShowModal(true);
+    };
+
+    const handleNewCategory = () => {
+        setEditingCategoria(null);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setEditingCategoria(null);
+    };
+
+    const isMutating = createMutation.isPending || updateMutation.isPending || toggleStatusMutation.isPending;
+
+    return {
+        categorias,
+        isLoading,
+        error,
+        showModal,
+        editingCategoria,
+        isMutating,
+        handleSubmitCategoria,
+        handleToggleStatus,
+        handleEdit,
+        handleNewCategory,
+        closeModal,
+        setShowModal
+    };
 }

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Categoria } from '@prisma/client';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,29 +11,41 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { CategoriaType } from '@/types/categorias';
+import AddProductImage, { ProductImage } from '@/components/productos/add-product-image';
 
 interface CategoriaFormProps {
-  categoria?: Partial<Categoria>;
-  onSubmit: (data: Partial<Categoria>) => void;
+  categoria?: Partial<CategoriaType>;
+  onSubmit: (data: Partial<CategoriaType>, imagen?: File) => void;
   onCancel: () => void;
 }
 
 export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormProps) => {
-  const [formData, setFormData] = useState<Partial<Categoria>>({
+  const [formData, setFormData] = useState<Partial<CategoriaType>>({
     nombre: '',
     icon: 'fa-tag',
     descripcion: '',
-    foto: '',
     estado: 'A',
     ...categoria
   });
 
+  const [imagen, setImagen] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (images: ProductImage[] | null) => {
+    if (images && images.length > 0) {
+      // Seleccionamos la imagen principal o la primera si no hay una principal
+      const mainImage = images.find(img => img.isMain) || images[0];
+      setImagen(mainImage.file);
+    } else {
+      setImagen(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,8 +58,8 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
 
     setIsLoading(true);
     try {
-      const { subcategorias, ...dataToSubmit } = formData as any;
-      await onSubmit(dataToSubmit);
+      const { subcategorias, foto, ...dataToSubmit } = formData as any;
+      await onSubmit(dataToSubmit, imagen || undefined);
     } catch (error) {
       console.error("Error al guardar la categoría:", error);
       setError('Error al guardar. Inténtalo de nuevo.');
@@ -57,10 +68,10 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
     }
   };
 
-  const iconOptions = [
-    'fa-tag', 'fa-shopping-cart', 'fa-utensils', 'fa-tshirt',
-    'fa-mobile-alt', 'fa-laptop', 'fa-couch', 'fa-book'
-  ];
+  // Preparar imágenes iniciales si hay una foto en la categoría
+  const initialImages = categoria?.foto
+    ? [{ url: categoria.foto, isMain: true }]
+    : [];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -81,19 +92,18 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="icon">Icono</Label>
+          <Label htmlFor="estado">Estado</Label>
           <Select
-            name="icon"
-            value={formData.icon}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}
+            name="estado"
+            value={formData.estado}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, estado: value as any }))}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder="Selecciona un icono" />
+              <SelectValue placeholder="Selecciona un estado" />
             </SelectTrigger>
             <SelectContent>
-              {iconOptions.map(icon => (
-                <SelectItem key={icon} value={icon}>{icon}</SelectItem>
-              ))}
+              <SelectItem value="A">Activo</SelectItem>
+              <SelectItem value="I">Inactivo</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -110,35 +120,15 @@ export const CategoriaForm = ({ categoria, onSubmit, onCancel }: CategoriaFormPr
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="foto">URL de la Foto</Label>
-          <Input
-            id="foto"
-            type="text"
-            name="foto"
-            value={formData.foto || ''}
-            onChange={handleChange}
-            placeholder="https://ejemplo.com/imagen.jpg"
+        <div className="md:col-span-2 space-y-2">
+          <AddProductImage
+            onImageChange={handleImageChange}
+            initialImages={initialImages}
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="estado">Estado</Label>
-          <Select
-            name="estado"
-            value={formData.estado}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, estado: value as any }))}
-          >
-            <SelectTrigger className='w-full'>
-              <SelectValue placeholder="Selecciona un estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="A">Activo</SelectItem>
-              <SelectItem value="I">Inactivo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
+
+      {error && <p className="text-red-500 text-sm">{error}</p>}
 
       <div className="flex justify-end space-x-3 pt-3">
         <Button variant="outline" onClick={onCancel} disabled={isLoading}>

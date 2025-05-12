@@ -1,8 +1,9 @@
 import { ProductoType } from "@/types/product";
 import { QueryClient, useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { API_URL } from "../../const";
 
-const API_URL = '/api/productos';
+const API_URL_PRODUCT = `${API_URL}/productos`;
 
 interface ProductsParams {
     page?: number;
@@ -37,38 +38,70 @@ const buildApiUrl = (params: ProductsParams): string => {
 
     if (search) queryParams.append('search', search);
 
-    return `${API_URL}?${queryParams.toString()}`;
+    return `${API_URL_PRODUCT}?${queryParams.toString()}`;
 };
 
-// Función para crear un nuevo producto
-const createProduct = async (newProduct: ProductoType): Promise<ProductoType> => {
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newProduct),
-    });
+// Función para crear un nuevo producto con soporte para carga de archivos
+const createProduct = async (productData: { data: Partial<ProductoType>, imagen?: File }): Promise<ProductoType> => {
+    const { data, imagen } = productData;
 
-    if (!response.ok) {
-        throw new Error('Error al crear el producto');
+    // Añadir el estado 'A' al objeto de datos, sin modificar el original
+    const productoConEstado = { ...data, estado: 'A' };
+
+    // Crear un nuevo FormData
+    const formData = new FormData();
+
+    // Añadir los datos del producto como JSON
+    formData.append('createProductoDto', JSON.stringify(productoConEstado));
+
+    // Añadir la imagen si existe
+    if (imagen) {
+        formData.append('imagen', imagen); // Aquí se maneja el archivo imagen
     }
 
-    return response.json();
+    try {
+        // Realizar la solicitud fetch
+        const response = await fetch(API_URL_PRODUCT, {
+            method: 'POST',
+            body: formData, // Enviar el FormData con los datos y la imagen
+        });
+
+        // Verificar si la respuesta es exitosa
+        if (!response.ok) {
+            throw new Error('Error al crear el producto');
+        }
+
+        // Devolver la respuesta en formato JSON
+        const responseData = await response.json();
+        return responseData;
+    } catch (error) {
+        console.error('Error en la creación del producto:', error);
+        throw error; // Lanza el error para manejarlo fuera de la función si es necesario
+    }
 };
 
-// Función para actualizar un producto existente
-const updateProduct = async (product: ProductoType): Promise<ProductoType> => {
-    if (!product.id) {
+// Actualizar la función updateProduct para soportar imágenes también
+const updateProduct = async (productData: { data: ProductoType, imagen?: File }): Promise<ProductoType> => {
+    const { data, imagen } = productData;
+
+    if (!data.id) {
         throw new Error('ID de producto requerido para actualizar');
     }
 
-    const response = await fetch(`${API_URL}/${product.id}`, {
+    // Crear un objeto FormData para enviar datos y archivos
+    const formData = new FormData();
+
+    // Añadir los datos del producto como JSON
+    formData.append('updateProductoDto', JSON.stringify(data));
+
+    // Añadir la imagen si existe
+    if (imagen) {
+        formData.append('imagen', imagen);
+    }
+
+    const response = await fetch(`${API_URL_PRODUCT}/${data.id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(product),
+        body: formData,
     });
 
     if (!response.ok) {
@@ -80,7 +113,9 @@ const updateProduct = async (product: ProductoType): Promise<ProductoType> => {
 
 // Función para actualizar precios masivamente
 const updatePrices = async (data: PriceUpdateData): Promise<any> => {
-    const response = await fetch(`${API_URL}/update-prices`, {
+
+
+    const response = await fetch(`${API_URL_PRODUCT}/update-prices`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -97,7 +132,7 @@ const updatePrices = async (data: PriceUpdateData): Promise<any> => {
 
 // Función para actualizar estados masivamente
 const updateStates = async (data: StateUpdateData): Promise<any> => {
-    const response = await fetch(`${API_URL}/update-state`, {
+    const response = await fetch(`${API_URL_PRODUCT}/update-state`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -150,8 +185,6 @@ export const prefetchProducts = async (
 
         const data = await fetcher(params);
 
-        console.log('DATASA: ', data);
-
         queryClient.setQueryData(queryKey, data);
 
         return data;
@@ -166,7 +199,7 @@ export function useCreateProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (newProduct: ProductoType) => createProduct(newProduct),
+        mutationFn: (productData: { data: Partial<ProductoType>, imagen?: File }) => createProduct(productData),
         onSuccess: (data) => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
@@ -194,9 +227,9 @@ export function useProducts(params: ProductsParams = {}) {
         refetchOnWindowFocus: false,
     });
 
-    // Añadir mutación para crear productos directamente en useProducts
+    // Actualizar mutación para crear productos
     const createProductMutation = useMutation({
-        mutationFn: (newProduct: ProductoType) => createProduct(newProduct),
+        mutationFn: (productData: { data: Partial<ProductoType>, imagen?: File }) => createProduct(productData),
         onSuccess: (data) => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
@@ -206,9 +239,9 @@ export function useProducts(params: ProductsParams = {}) {
         }
     });
 
-    // Añadir mutación para actualizar productos
+    // Actualizar mutación para actualizar productos
     const updateProductMutation = useMutation({
-        mutationFn: (updatedProduct: ProductoType) => updateProduct(updatedProduct),
+        mutationFn: (productData: { data: ProductoType, imagen?: File }) => updateProduct(productData),
         onSuccess: (data) => {
             // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
@@ -222,7 +255,6 @@ export function useProducts(params: ProductsParams = {}) {
     const updatePricesMutation = useMutation({
         mutationFn: (priceUpdateData: PriceUpdateData) => updatePrices(priceUpdateData),
         onSuccess: (data) => {
-            // Invalidar la caché para que se actualice la lista de productos
             queryClient.invalidateQueries({ queryKey: ['productos'] });
         },
         onError: (error) => {
@@ -276,7 +308,7 @@ export function useProducts(params: ProductsParams = {}) {
             try {
                 await prefetchProducts(nextParams, queryClient, isFetching);
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
         }
     }, [data, params, queryClient, isFetching]);

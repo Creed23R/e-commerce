@@ -98,10 +98,14 @@ export function ProductsContent() {
         );
     };
 
-    const handleSubmitProduct = async (data: ProductoType) => {
+    const handleSubmitProduct = async (data: ProductoType, imagen?: File) => {
+
         setIsSubmitting(true);
         try {
-            await createProduct(data);
+            await createProduct({
+                data,
+                imagen
+            });
             toast.success('Producto creado exitosamente');
             setIsDialogOpen(false);
         } catch (error) {
@@ -112,11 +116,14 @@ export function ProductsContent() {
         }
     };
 
-    const handleUpdateProduct = async (data: ProductoType) => {
+    const handleUpdateProduct = async (data: ProductoType, imagen?: File) => {
         setIsSubmitting(true);
         try {
-            await updateProduct(data);
-            const loadingToast = toast.success('Actulizando Producto');
+            await updateProduct({
+                data,
+                imagen
+            });
+            const loadingToast = toast.success('Actualizando Producto');
             setIsUpdateDialogOpen(false);
             setRowSelection({});
 

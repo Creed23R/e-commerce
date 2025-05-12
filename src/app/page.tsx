@@ -11,32 +11,13 @@ const items = [
     description: 'Gestiona todos los productos disponibles en el catálogo.',
   },
   {
-    name: 'Precios',
-    url: '/precios',
-    icon: Tag,
-    description: 'Administra los precios y promociones de tus productos.',
-  },
-  {
-    name: 'Stocks',
-    url: '/stocks',
-    icon: Layers,
-    description: 'Controla y actualiza la cantidad de productos en inventario.',
-  },
-  {
     name: 'Categorías',
     url: '/categorias',
     icon: Folder,
     description: 'Organiza los productos en categorías principales.',
-  },
-  {
-    name: 'Subcategorías',
-    url: '/subcategorias',
-    icon: FolderOpen,
-    description: 'Define subcategorías para una clasificación más detallada.',
-  },
+  }
 ]
-
-export default function Page() {
+export default async function Page() {
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 gap-4">

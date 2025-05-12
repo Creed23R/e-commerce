@@ -1,4 +1,3 @@
-import { Categoria, Subcategoria } from '@prisma/client';
 import Image from 'next/image';
 import React from 'react';
 import { SubcategoriaList } from './subcategoria-list';
@@ -14,7 +13,7 @@ import { CategoriaType, SubcategoriaType } from '@/types/categorias';
 
 interface CategoriaCardProps {
     categoria: CategoriaType & { subcategorias: SubcategoriaType[] };
-    onEdit: (categoria: Categoria) => void;
+    onEdit: (categoria: CategoriaType) => void;
     onToggleStatus: (id: string) => void;
 }
 

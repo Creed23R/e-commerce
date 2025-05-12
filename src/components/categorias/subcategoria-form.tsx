@@ -1,11 +1,11 @@
+import { CategoriaType, SubcategoriaType } from '@/types/categorias';
 import React, { useEffect, useState } from 'react';
-import { Categoria, Subcategoria } from '@prisma/client';
 
 interface SubcategoriaFormProps {
-    subcategoria?: Partial<Subcategoria>;
-    categorias: Categoria[];
+    subcategoria?: Partial<SubcategoriaType>;
+    categorias: CategoriaType[];
     initialCategoriaId?: string;
-    onSubmit: (data: Partial<Subcategoria>) => void;
+    onSubmit: (data: Partial<SubcategoriaType>) => void;
     onCancel: () => void;
 }
 
@@ -16,7 +16,7 @@ export const SubcategoriaForm = ({
     onSubmit,
     onCancel
 }: SubcategoriaFormProps) => {
-    const [formData, setFormData] = useState<Partial<Subcategoria>>({
+    const [formData, setFormData] = useState<Partial<SubcategoriaType>>({
         nombre: '',
         icon: 'fa-tag',
         descripcion: '',

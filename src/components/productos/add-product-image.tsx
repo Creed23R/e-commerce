@@ -1,9 +1,9 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ImagePlus, Trash2, Upload, X, Star } from 'lucide-react';
+import { ImagePlus, Trash2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
 export interface ProductImage {
@@ -17,167 +17,88 @@ interface AddProductImageProps {
 }
 
 export default function AddProductImage({ onImageChange, initialImages = [] }: AddProductImageProps) {
-    const [productImages, setProductImages] = useState<{ url: string, file: File, name: string, isMain: boolean }[]>([]);
-    const [currentImageIndex, setCurrentImageIndex] = useState<number | null>(null);
+    const [productImage, setProductImage] = useState<{ url: string, file: File, name: string, isFromDB: boolean } | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Cargar imágenes iniciales si existen
     useEffect(() => {
         if (initialImages && initialImages.length > 0) {
-            // Convertir las URLs iniciales a objetos File simulados para mantener compatibilidad
-            const processedImages = initialImages.map((img, index) => {
-                // Crear un File simulado a partir de la URL
-                // Nota: En un entorno real, esto podría requerir descargar la imagen
-                const fileName = `image-${index + 1}.jpg`;
-                return {
-                    url: img.url,
-                    file: new File([], fileName, { type: 'image/jpeg' }),
-                    name: fileName,
-                    isMain: img.isMain
-                };
+            // Solo tomamos la primera imagen de las iniciales
+            const img = initialImages[0];
+            const fileName = `image-from-db.jpg`;
+
+            setProductImage({
+                url: img.url,
+                file: new File([], fileName, { type: 'image/jpeg' }),
+                name: fileName,
+                isFromDB: true // Marcamos que esta imagen viene de la base de datos
             });
-            
-            setProductImages(processedImages);
-            if (processedImages.length > 0) {
-                setCurrentImageIndex(0);
-            }
-            
-            // No llamar a onImageChange aquí para evitar el bucle infinito
-            // El componente padre ya tiene estos datos
+        } else {
+            setProductImage(null);
         }
-    }, [initialImages]); // Quitar onImageChange de las dependencias
+    }, [initialImages]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const isMain = productImages.length === 0;
-
                 const newImage = {
                     url: e.target?.result as string,
                     file: file,
                     name: file.name,
-                    isMain
+                    isFromDB: false // Esta imagen es nueva, no de la base de datos
                 };
 
-                const updatedImages = [...productImages, newImage];
-                setProductImages(updatedImages);
-                setCurrentImageIndex(updatedImages.length - 1);
+                // Reemplazar la imagen existente con la nueva
+                setProductImage(newImage);
 
                 if (onImageChange) {
-                    onImageChange(updatedImages.map(img => ({ file: img.file, isMain: img.isMain })));
+                    // Siempre enviamos una única imagen con isMain: true
+                    onImageChange([{ file: newImage.file, isMain: true }]);
                 }
             };
             reader.readAsDataURL(file);
+
+            // Reiniciar el input para permitir seleccionar el mismo archivo de nuevo si es necesario
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
-    const handleRemoveImage = (index: number) => {
-        const updatedImages = [...productImages];
-        const removedImage = updatedImages[index];
-        updatedImages.splice(index, 1);
+    const handleRemoveImage = () => {
+        setProductImage(null);
 
-        if (removedImage.isMain && updatedImages.length > 0) {
-            updatedImages[0].isMain = true;
-        }
-
-        setProductImages(updatedImages);
-
-        if (updatedImages.length === 0) {
-            setCurrentImageIndex(null);
-        } else if (currentImageIndex === index) {
-            setCurrentImageIndex(updatedImages.length - 1);
-        } else if (currentImageIndex !== null && currentImageIndex > index) {
-            setCurrentImageIndex(currentImageIndex - 1);
+        // Reiniciar el input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
 
         if (onImageChange) {
-            onImageChange(updatedImages.length > 0 ? updatedImages.map(img => ({ file: img.file, isMain: img.isMain })) : null);
+            onImageChange(null);
         }
-    };
-
-    const handleSetMainImage = (index: number) => {
-        const updatedImages = productImages.map((img, idx) => ({
-            ...img,
-            isMain: idx === index
-        }));
-
-        setProductImages(updatedImages);
-
-        if (onImageChange) {
-            onImageChange(updatedImages.map(img => ({ file: img.file, isMain: img.isMain })));
-        }
-    };
-
-    const handleAddMoreImage = () => {
-        document.getElementById('image')?.click();
     };
 
     const triggerFileInput = () => {
-        document.getElementById('image')?.click();
+        fileInputRef.current?.click();
     };
 
     return (
         <div className="space-y-4">
-            <Label htmlFor="image">Imágenes del producto</Label>
-
-            {productImages.length > 1 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                    {productImages.map((img, idx) => (
-                        idx !== currentImageIndex && (
-                            <div key={idx} className="relative size-9 bg-gray-100 rounded group">
-                                <Image
-                                    src={img.url}
-                                    alt={`Imagen ${idx + 1}`}
-                                    className="object-contain"
-                                    fill
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentImageIndex(idx);
-                                    }}
-                                />
-                                {img.isMain && (
-                                    <div className="absolute top-0 right-0 bg-amber-400 text-white rounded-full p-0.5">
-                                        <Star className="h-3 w-3" />
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center bg-transparent group-hover:bg-black/5 transition-colors">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 min-w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveImage(idx);
-                                        }}
-                                        type="button"
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )
-                    ))}
-                </div>
-            )}
+            <Label htmlFor="image">Imagen</Label>
 
             <div
                 className="border-2 border-dashed border-input rounded-lg p-2 text-center cursor-pointer"
-                onClick={currentImageIndex === null ? triggerFileInput : undefined}
+                onClick={productImage === null ? triggerFileInput : undefined}
             >
-                {currentImageIndex !== null && productImages.length > 0 ? (
+                {productImage ? (
                     <div className="relative w-full h-28 group">
                         <Image
-                            src={productImages[currentImageIndex].url}
-                            alt="Imagen actual"
+                            src={productImage.url}
+                            alt="Imagen"
                             className="object-contain"
                             fill
                         />
-                        {productImages[currentImageIndex].isMain && (
-                            <div className="absolute top-2 right-2 bg-amber-400 text-white rounded-full p-1">
-                                <Star className="h-4 w-4" />
-                            </div>
-                        )}
                         <div className="absolute inset-0 flex items-center justify-center bg-transparent group-hover:bg-black/5 transition-colors">
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
@@ -186,33 +107,19 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                                     className="shadow-md"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleAddMoreImage();
+                                        triggerFileInput();
                                     }}
                                     type="button"
                                 >
                                     <Upload className="h-4 w-4" />
                                 </Button>
-                                {!productImages[currentImageIndex].isMain && (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="shadow-md bg-amber-50"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleSetMainImage(currentImageIndex);
-                                        }}
-                                        type="button"
-                                    >
-                                        <Star className="h-4 w-4 text-amber-500" />
-                                    </Button>
-                                )}
                                 <Button
                                     variant="destructive"
                                     size="icon"
                                     className="shadow-md"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleRemoveImage(currentImageIndex);
+                                        handleRemoveImage();
                                     }}
                                     type="button"
                                 >
@@ -229,6 +136,7 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                 )}
                 <Input
                     id="image"
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
@@ -236,20 +144,16 @@ export default function AddProductImage({ onImageChange, initialImages = [] }: A
                 />
             </div>
 
-            {currentImageIndex !== null && productImages.length > 0 && (
+            {productImage && (
                 <div className="flex justify-between items-center">
                     <span className="text-sm truncate max-w-[80%]">
-                        {productImages[currentImageIndex].name}
-                        {productImages[currentImageIndex].isMain && (
-                            <span className="ml-2 text-amber-500 text-xs font-medium">
-                                (Imagen principal)
-                            </span>
-                        )}
+                        {productImage.name}
+                        {productImage.isFromDB && <span className="ml-1 text-muted-foreground">(de la BD)</span>}
                     </span>
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveImage(currentImageIndex)}
+                        onClick={handleRemoveImage}
                         type="button"
                     >
                         <X className="h-4 w-4" />

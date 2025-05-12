@@ -17,9 +17,10 @@ import AddProductImage, { ProductImage } from "./add-product-image";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { UnidadVenta, Moneda } from '@prisma/client';
 import { ProductoType } from "@/types/product";
-
+import { Moneda } from "@/types/moneda";
+import { UnidadVenta } from "@/types/unidad-venta";
+import { API_URL } from "../../../const";
 
 interface ProductFormErrors {
     codigo?: string;
@@ -38,11 +39,10 @@ interface ProductFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: ProductoType | null;
-    onSubmit: (data: ProductoType) => Promise<void>;
+    onSubmit: (data: ProductoType, imagen?: File) => Promise<void>;
     isLoading?: boolean;
 }
 
-// Tipos para subcategorías
 type Subcategoria = {
     id: string;
     nombre: string;
@@ -80,8 +80,8 @@ export function ProductFormDialog({
     const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
     const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
     const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
+    const [productImage, setProductImage] = useState<File | null>(null);
 
-    // Resetear el formulario cuando se abre
     useEffect(() => {
         if (open) {
             setFormData(defaultValues);
@@ -89,13 +89,11 @@ export function ProductFormDialog({
         }
     }, [open]);
 
-    // Cargar subcategorías al montar el componente
     useEffect(() => {
         const fetchSubcategorias = async () => {
             setLoadingSubcategorias(true);
             try {
-                // Obtener subcategorías desde la API
-                const response = await fetch('/api/subcategorias');
+                const response = await fetch(`${API_URL}/subcategorias`);
 
                 if (!response.ok) {
                     throw new Error('Error al cargar las subcategorías');
@@ -117,7 +115,6 @@ export function ProductFormDialog({
         }
     }, [open]);
 
-    // Calcular precio de venta cuando cambian valor de venta o tasa de impuesto
     useEffect(() => {
         const calculatedPrice = formData.valorVenta * (1 + formData.tasaImpuesto / 100);
         setFormData(prev => ({
@@ -126,7 +123,6 @@ export function ProductFormDialog({
         }));
     }, [formData.valorVenta, formData.tasaImpuesto]);
 
-    // Manejar cambios en los campos del formulario
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
 
@@ -135,7 +131,6 @@ export function ProductFormDialog({
             [name]: type === 'number' ? parseFloat(value) || 0 : value
         }));
 
-        // Limpiar error cuando el usuario corrige un campo
         if (errors[name as keyof ProductFormErrors]) {
             setErrors(prev => ({
                 ...prev,
@@ -144,14 +139,12 @@ export function ProductFormDialog({
         }
     };
 
-    // Manejar cambios en componentes Select de shadcn
     const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
 
-        // Limpiar error cuando el usuario corrige un campo
         if (errors[name as keyof ProductFormErrors]) {
             setErrors(prev => ({
                 ...prev,
@@ -164,15 +157,15 @@ export function ProductFormDialog({
         setProductImages(files);
 
         if (files && files.length > 0) {
-            // Encontrar la imagen principal
             const mainImage = files.find(file => file.isMain);
             if (mainImage) {
-                // Convertir el archivo a base64 para el formulario
+                // Guardar la referencia al archivo original
+                setProductImage(mainImage.file);
+
+                // También guardar en base64 para vista previa si es necesario
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const base64 = e.target?.result as string;
-                    console.log("Imagen convertida a base64, longitud:", base64.length);
-
                     setFormData(prev => ({
                         ...prev,
                         foto: base64
@@ -181,6 +174,7 @@ export function ProductFormDialog({
                 reader.readAsDataURL(mainImage.file);
             }
         } else {
+            setProductImage(null);
             setFormData(prev => ({
                 ...prev,
                 foto: ""
@@ -188,7 +182,6 @@ export function ProductFormDialog({
         }
     };
 
-    // Validar formulario
     const validateForm = (): boolean => {
         const newErrors: ProductFormErrors = {};
 
@@ -232,14 +225,12 @@ export function ProductFormDialog({
         return Object.keys(newErrors).length === 0;
     };
 
-    // Manejar envío del formulario
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (validateForm()) {
             const dataToSubmit = {
                 ...formData,
-                // Asegurarnos que los valores numéricos son números
                 valorVenta: parseFloat(formData.valorVenta.toString()),
                 tasaImpuesto: parseFloat(formData.tasaImpuesto.toString()),
                 precioVenta: parseFloat((formData.precioVenta || 0).toString()),
@@ -247,15 +238,8 @@ export function ProductFormDialog({
                 stockComprometido: parseInt(formData.stockComprometido.toString())
             };
 
-            // Si tenemos imágenes, usaremos la principal
-            if (productImages && productImages.length > 0) {
-                const mainImage = productImages.find(img => img.isMain);
-                if (mainImage) {
-                    dataToSubmit.foto = formData.foto; // Ya tenemos la URL Data en el formData
-                }
-            }
-
-            onSubmit(dataToSubmit as ProductoType);
+            // Enviar el formulario con la referencia al archivo de imagen original
+            onSubmit(dataToSubmit as ProductoType, productImage || undefined);
         }
     };
 
@@ -462,12 +446,11 @@ export function ProductFormDialog({
                                             <SelectValue placeholder="Seleccionar subcategoría" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="0570ad81-0c84-4be0-8bff-9d8d0209cb11">1</SelectItem>
-                                            {/* {subcategorias.map((subcategoria) => (
+                                            {subcategorias.map((subcategoria) => (
                                                 <SelectItem key={subcategoria.id} value={subcategoria.id}>
                                                     {subcategoria.nombre}
                                                 </SelectItem>
-                                            ))} */}
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     {errors.subcategoriaId && <p className="text-xs text-red-500">{errors.subcategoriaId}</p>}

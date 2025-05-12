@@ -1,21 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Categoria, Subcategoria } from '@prisma/client';
 import { SubcategoriaForm } from '@/components/categorias/subcategoria-form';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { CategoriaType, SubcategoriaType } from '@/types/categorias';
+import { API_URL } from '../../../../../const';
 
 interface SubcategoriaPageProps {
   params: { id: string };
 }
 
 export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) {
-  const [subcategoria, setSubcategoria] = useState<Subcategoria | null>(null);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategoria, setSubcategoria] = useState<SubcategoriaType | null>(null);
+  const [categorias, setCategorias] = useState<CategoriaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const router = useRouter();
   const { id } = params;
 
@@ -24,13 +25,13 @@ export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) 
     const fetchData = async () => {
       try {
         // Obtener subcategoría
-        const subResponse = await fetch(`http://localhost:3000/api/subcategorias/${id}`);
+        const subResponse = await fetch(`${API_URL}/subcategorias/${id}`);
         if (!subResponse.ok) throw new Error('Error al cargar subcategoría');
         const subData = await subResponse.json();
         setSubcategoria(subData);
-        
+
         // Obtener categorías
-        const catResponse = await fetch('http://localhost:3000/api/categorias');
+        const catResponse = await fetch(`${API_URL}/categorias`);
         if (!catResponse.ok) throw new Error('Error al cargar categorías');
         const catData = await catResponse.json();
         setCategorias(catData);
@@ -45,18 +46,18 @@ export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) 
   }, [id]);
 
   // Actualizar subcategoría
-  const handleSubmit = async (formData: Partial<Subcategoria>) => {
+  const handleSubmit = async (formData: Partial<SubcategoriaType>) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/subcategorias/${id}`, {
+      const response = await fetch(`${API_URL}/subcategorias/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
-      
+
       if (!response.ok) throw new Error('Error al actualizar subcategoría');
-      
+
       router.push('/categorias');
     } catch (err) {
       setError((err as Error).message);
@@ -66,12 +67,12 @@ export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) 
   // Cambiar estado de subcategoría
   const handleToggleStatus = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/subcategorias/${id}`, {
+      const response = await fetch(`${API_URL}/subcategorias/${id}`, {
         method: 'PATCH',
       });
-      
+
       if (!response.ok) throw new Error('Error al cambiar estado');
-      
+
       router.push('/categorias');
     } catch (err) {
       setError((err as Error).message);
@@ -110,14 +111,13 @@ export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) 
           </svg>
           Volver a Categorías
         </Link>
-        
+
         <button
           onClick={handleToggleStatus}
-          className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 ${
-            subcategoria.estado === 'A' 
-              ? 'bg-destructive/10 text-destructive hover:bg-destructive/20' 
-              : 'bg-success/10 text-success hover:bg-success/20'
-          }`}
+          className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 ${subcategoria.estado === 'A'
+            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+            : 'bg-success/10 text-success hover:bg-success/20'
+            }`}
         >
           {subcategoria.estado === 'A' ? (
             <>
@@ -140,7 +140,7 @@ export default function EditSubcategoriaPage({ params }: SubcategoriaPageProps) 
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive mb-6">
           {error}
-          <button 
+          <button
             onClick={() => setError(null)}
             className="float-right font-bold"
           >

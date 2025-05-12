@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Categoria, Subcategoria } from '@prisma/client';
 import { SubcategoriaForm } from '@/components/categorias/subcategoria-form';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { CategoriaType, SubcategoriaType } from '@/types/categorias';
+import { API_URL } from '../../../../../const';
 
 export default function NewSubcategoriaPage() {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -19,7 +20,7 @@ export default function NewSubcategoriaPage() {
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/categorias');
+        const response = await fetch(`${API_URL}/categorias`);
         if (!response.ok) throw new Error('Error al cargar categorías');
         
         const data = await response.json();
@@ -35,9 +36,9 @@ export default function NewSubcategoriaPage() {
   }, []);
 
   // Crear subcategoría
-  const handleSubmit = async (formData: Partial<Subcategoria>) => {
+  const handleSubmit = async (formData: Partial<SubcategoriaType>) => {
     try {
-      const response = await fetch('http://localhost:3000/api/subcategorias', {
+      const response = await fetch(`${API_URL}/subcategorias`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
