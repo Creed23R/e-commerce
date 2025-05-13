@@ -84,8 +84,6 @@ const createProduct = async (productData: { data: Partial<ProductoType>, imagen?
 const updateProduct = async (productData: { data: ProductoType, imagen?: File }): Promise<ProductoType> => {
     const { data, imagen } = productData;
 
-    console.log('Actualizando producto:', data);
-
     if (!data.id) {
         throw new Error('ID de producto requerido para actualizar');
     }
@@ -240,9 +238,18 @@ export function useProducts(params: ProductsParams = {}) {
     // Actualizar mutación para actualizar productos
     const updateProductMutation = useMutation({
         mutationFn: (productData: { data: ProductoType, imagen?: File }) => updateProduct(productData),
-        onSuccess: () => {
-            // Invalidar la caché para que se actualice la lista de productos
-            queryClient.invalidateQueries({ queryKey: ['productos'] });
+        onSuccess: (updatedProduct) => {
+            // En lugar de invalidar, actualizamos directamente el producto en la caché
+            queryClient.setQueryData(queryKey, (oldData: ProductsData | undefined) => {
+                if (!oldData) return oldData;
+
+                return {
+                    ...oldData,
+                    productos: oldData.productos.map(product =>
+                        product.id === updatedProduct.id ? updatedProduct : product
+                    )
+                };
+            });
         },
         onError: (error) => {
             console.error('Error al actualizar el producto:', error);

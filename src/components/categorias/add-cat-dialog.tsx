@@ -49,19 +49,15 @@ export function AddCatDialog({
         createdAt: new Date(),
     });
     const [errors, setErrors] = useState<FormErrors>({});
-    const [productImages, setProductImages] = useState<ProductImage[] | null>(null);
     const [categoriaImage, setCategoriaImage] = useState<File | null>(null);
-    console.log("categoriaImage", productImages);
+
     const handleImageChange = (files: ProductImage[] | null) => {
-        setProductImages(files);
 
         if (files && files.length > 0) {
             const mainImage = files.find(file => file.isMain);
             if (mainImage) {
-                // Guardar la referencia al archivo original
                 setCategoriaImage(mainImage.file);
 
-                // También guardar en base64 para vista previa
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const base64 = e.target?.result as string;

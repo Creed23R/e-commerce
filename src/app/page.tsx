@@ -33,6 +33,7 @@ export default async function Page() {
     <>
       <Card className="mb-4">
         <CardContent>
+
           <p>
             <strong>Frontend:</strong> Desarrollado con <strong>React</strong> y <strong>Next.js</strong>, utilizando <strong>Tailwind CSS</strong> para estilos y <strong>shadcn/ui</strong> y <strong>Radix UI</strong> para componentes. Gestión de datos con <strong>TanStack Query</strong> y <strong>TanStack Table</strong>.
           </p>
@@ -63,6 +64,7 @@ export default async function Page() {
           </div>
         </CardContent>
       </Card>
+
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {
           items.map(item => (
@@ -85,6 +87,7 @@ export default async function Page() {
           ))
         }
       </section>
+
     </>
   )
 }
