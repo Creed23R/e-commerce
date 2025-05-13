@@ -63,6 +63,8 @@ export function UpdateCatDialog({
                 ...defaultValues,
                 ...initialData
             });
+            // Reiniciar el estado de la imagen
+            setCategoriaImage(null);
             setErrors({});
         }
     }, [open, initialData, defaultValues]);

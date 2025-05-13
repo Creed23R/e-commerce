@@ -5,7 +5,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { ProductoType } from "@/types/product";
 import { ColumnDef } from "@tanstack/react-table";
-import { ChevronsUpDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -56,7 +55,6 @@ export const columns: ColumnDef<ProductoType>[] = [
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
                     Título
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
@@ -97,7 +95,6 @@ export const columns: ColumnDef<ProductoType>[] = [
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
                     Precio
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
@@ -128,7 +125,6 @@ export const columns: ColumnDef<ProductoType>[] = [
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
                     Stock
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
@@ -183,7 +179,6 @@ export const columns: ColumnDef<ProductoType>[] = [
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
                     Fecha
-                    <ChevronsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },

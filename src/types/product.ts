@@ -23,6 +23,11 @@ export interface ProductoType {
     subcategoria: string;
     stockFisico: number;
     stockComprometido: number;
+    stockRegistro?: {
+        stockFisico: number;
+        stockComprometido: number;
+
+    }
 }
 
 export interface ProductsResponse {

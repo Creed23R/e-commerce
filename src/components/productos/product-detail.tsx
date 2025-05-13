@@ -59,8 +59,8 @@ export default function ProductDetail({ product }: { product: ProductoType }) {
 
                 <div className='col-span-4'>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <StatCard title="Price" value={`$${mockData.totalRevenue}`} icon={<DollarSign className="h-5 w-5 text-primary" />} />
-                        <StatCard title="Orders" value={mockData.totalRevenue} icon={<ShoppingBag className="h-5 w-5 text-primary" />} />
+                        <StatCard title="Price" value={`${product.valorVenta}`} icon={<DollarSign className="h-5 w-5 text-primary" />} />
+                        <StatCard title="Orders" value={product.precioVenta} icon={<ShoppingBag className="h-5 w-5 text-primary" />} />
                         <StatCard title="Stock" value={mockData.totalRevenue} icon={<Package className="h-5 w-5 text-primary" />} />
                         <StatCard title="Total Revenue" value={mockData.totalRevenue} icon={<BarChart3 className="h-5 w-5 text-primary" />} />
                     </div>
